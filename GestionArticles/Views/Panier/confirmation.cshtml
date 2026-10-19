@@ -1,0 +1,253 @@
+﻿@model GestionArticles.Models.Order
+
+@{
+    ViewData["Title"] = "Commande validée";
+}
+
+<style>
+    .confirm-wrapper {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .confirm-header {
+        text-align: center;
+        padding: 2rem 1rem 1rem;
+    }
+
+    .confirm-icon {
+        width: 90px;
+        height: 90px;
+        animation: pop .5s ease-out;
+    }
+
+    @@keyframes pop {
+        0% {
+            transform: scale(0);
+        }
+
+        80% {
+            transform: scale(1.15);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .info-card {
+        border: 0;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(0,0,0,.08);
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: .9rem;
+        padding: .8rem 0;
+        border-bottom: 1px solid #eee;
+    }
+
+        .info-item:last-child {
+            border-bottom: 0;
+        }
+
+    .info-emoji {
+        font-size: 1.6rem;
+        width: 2.2rem;
+        text-align: center;
+    }
+
+    .info-label {
+        color: #6c757d;
+        font-size: .85rem;
+        margin: 0;
+    }
+
+    .info-value {
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .steps {
+        display: flex;
+        justify-content: space-between;
+        text-align: center;
+        margin: 2rem 0 1rem;
+        position: relative;
+    }
+
+        .steps::before {
+            content: "";
+            position: absolute;
+            top: 22px;
+            left: 12%;
+            right: 12%;
+            height: 3px;
+            background: #dee2e6;
+            z-index: 0;
+        }
+
+    .step {
+        flex: 1;
+        position: relative;
+        z-index: 1;
+    }
+
+    .step-dot {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto .4rem;
+        font-size: 1.3rem;
+    }
+
+    .step.done .step-dot {
+        background: #198754;
+        color: #fff;
+    }
+
+    .step small {
+        color: #6c757d;
+    }
+
+    .total-row {
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+</style>
+
+<div class="confirm-wrapper">
+
+    <!-- En-tête de succès -->
+    <div class="confirm-header">
+        <svg class="confirm-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="46" fill="#198754" />
+            <path d="M28 52 L44 68 L74 36" fill="none" stroke="#fff" stroke-width="9"
+                  stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <h1 class="mt-3 text-success">Commande validée !</h1>
+        <p class="lead text-muted">
+            Merci pour votre achat, <strong>@Model.CustomerName</strong> ! Votre commande a bien été enregistrée.
+        </p>
+    </div>
+
+    <!-- Suivi de la commande -->
+    <div class="steps">
+        <div class="step done">
+            <div class="step-dot">✔</div>
+            <small>Commande reçue</small>
+        </div>
+        <div class="step">
+            <div class="step-dot">📦</div>
+            <small>Préparation</small>
+        </div>
+        <div class="step">
+            <div class="step-dot">🚚</div>
+            <small>Livraison</small>
+        </div>
+        <div class="step">
+            <div class="step-dot">🏠</div>
+            <small>Livrée</small>
+        </div>
+    </div>
+
+    <!-- Récapitulatif -->
+    <div class="card info-card mb-4">
+        <div class="card-body p-4">
+            <h4 class="mb-3">Récapitulatif de votre commande</h4>
+
+            <div class="info-item">
+                <span class="info-emoji">🧾</span>
+                <div>
+                    <p class="info-label">Numéro de commande</p>
+                    <p class="info-value">#@Model.Id</p>
+                </div>
+            </div>
+
+            <div class="info-item">
+                <span class="info-emoji">📅</span>
+                <div>
+                    <p class="info-label">Date</p>
+                    <p class="info-value">@Model.OrderDate.ToString("dd/MM/yyyy à HH:mm")</p>
+                </div>
+            </div>
+
+            <div class="info-item">
+                <span class="info-emoji">📍</span>
+                <div>
+                    <p class="info-label">Adresse de livraison</p>
+                    <p class="info-value">@Model.Address</p>
+                </div>
+            </div>
+
+            <div class="info-item">
+                <span class="info-emoji">✉️</span>
+                <div>
+                    <p class="info-label">Email</p>
+                    <p class="info-value">@Model.Email</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Articles commandés -->
+    @if (Model.Items != null && Model.Items.Any())
+    {
+        <div class="card info-card mb-4">
+            <div class="card-body p-4">
+                <h4 class="mb-3">Articles commandés</h4>
+
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Produit</th>
+                                <th class="text-center">Quantité</th>
+                                <th class="text-end">Prix unitaire</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td>🛒 @item.ProductName</td>
+                                    <td class="text-center">@item.Quantity</td>
+                                    <td class="text-end">@item.Price.ToString("N2")</td>
+                                    <td class="text-end">@((item.Price * item.Quantity).ToString("N2"))</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="3" class="text-end">Montant total :</td>
+                                <td class="text-end text-success">@Model.TotalAmount.ToString("N2")</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p class="total-row text-end">Montant total : <span class="text-success">@Model.TotalAmount.ToString("N2")</span></p>
+    }
+
+    <!-- Boutons -->
+    <div class="text-center mb-5">
+        <a asp-controller="Product" asp-action="Index" class="btn btn-success btn-lg m-1">
+            🛍️ Continuer mes achats
+        </a>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary btn-lg m-1">
+            🏠 Accueil
+        </a>
+    </div>
+
+</div>

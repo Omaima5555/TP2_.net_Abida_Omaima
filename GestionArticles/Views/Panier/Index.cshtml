@@ -1,0 +1,97 @@
+﻿@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Mon panier</h2>
+
+<body>
+    <div>
+        @if (ViewBag.Liste.Count > 0)
+        {
+            <table class="table table-hover">
+                <tr class="carousel">
+                    <th>
+                        <h5><strong>Produit</strong></h5>
+                    </th>
+                    <th class="danger">
+                        <h5><strong>Description</strong></h5>
+                    </th>
+                </tr>
+
+                @foreach (var item in ViewBag.Liste)
+                {
+                    <tr id="row-@item.Prod.ProductId">
+                        <td>
+                            <img src="~/images/@item.Prod.Image" style="width:250px;height:250px">
+                        </td>
+                        <td>
+                            <h5>Nom : @item.Prod.Name </h5>
+                            <hr />
+                            <h5>Catégorie : @item.Prod.Category.CategoryName </h5>
+                            <hr />
+                            <h5>
+                                Quantité :
+                                <span id="quantite_@item.Prod.ProductId">@item.quantite</span>
+                            </h5>
+                            <hr />
+
+                            <a href="#" class="PlusProducts" data-id="@item.Prod.ProductId">
+                                <img src="~/images/add.jpg" style="width:50px;height:50px">
+                            </a>
+
+                            <a href="#" class="MinProducts" data-id="@item.Prod.ProductId">
+                                <img src="~/images/moin.jpg" style="width:50px;height:50px">
+                            </a>
+
+                            <a href="#" class="RemoveLink" data-id="@item.Prod.ProductId">
+                                <img src="~/images/delet.jpg" style="width:50px;height:50px">
+                            </a>
+
+                            <div>
+                                <hr />
+                                <h5>
+                                    Prix de
+                                    <span id="rquantite_@item.Prod.ProductId">@item.quantite</span>
+                                    article(s) :
+                                    <span id="total_@item.Prod.ProductId">@item.TotalPrice</span>
+                                </h5>
+                                <hr />
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </table>
+
+            <div>
+                <h5>
+                    <strong>Prix total à payer : @ViewBag.total</strong>
+                </h5>
+            </div>
+
+            @if (ViewBag.total > 0)
+            {
+                <div>
+                    <a href="~/Product/Index" class="btn btn-secondary" role="button">Home</a>
+                    <a href="~/Panier/Checkout" class="btn btn-success" role="button">Commander »</a>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center mt-5">
+                <img src="~/images/panier_vide.jpg" alt="Panier vide" style="width:200px;height:auto;" />
+
+                <h3 class="mt-3 text-muted">Votre panier est vide !</h3>
+
+                <p class="text-muted">
+                    Partez à la découverte de nos produits et faites-vous plaisir
+                </p>
+
+                <a href="~/Product/Index" class="btn btn-primary mt-3">Voir les produits</a>
+            </div>
+        }
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/js/Monscript.js" type="text/javascript"></script>
+</body>

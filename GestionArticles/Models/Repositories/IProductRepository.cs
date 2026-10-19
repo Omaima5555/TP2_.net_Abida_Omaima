@@ -9,5 +9,8 @@
         void Delete(int Id);
         public IList<Product> GetProductsByCategID(int? CategId);
         public IList<Product> FindByName(string name);
+        public IQueryable<Product> GetAllProducts();
+
+
     }
 }

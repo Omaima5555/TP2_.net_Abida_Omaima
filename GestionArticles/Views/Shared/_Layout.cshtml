@@ -10,8 +10,6 @@
 
     <title>@ViewData["Title"] - GestionArticles</title>
 
-    <script type="importmap"></script>
-
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/GestionArticles.styles.css" asp-append-version="true" />
@@ -23,6 +21,14 @@
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
 
             <div class="container-fluid">
+
+                <!-- Bouton afficher / cacher le menu latéral des catégories -->
+                <button class="btn btn-outline-primary" type="button">
+                    <img src="~/images/categorie.jpg"
+                         alt="Ouvrir la liste des catégories"
+                         id="toggleMenu"
+                         style="width:30px;height:30px" />
+                </button>
 
                 <!-- Logo / Nom du site -->
                 <a class="navbar-brand"
@@ -109,6 +115,11 @@
                                 </a>
                             </div>
                         </li>
+                        <li class="nav-item">
+
+                        <a class="nav-link text-dark" asp-controller="Panier" asp-action="Index">Mon Panier</a>
+
+                         </li>
 
                     </ul>
 
@@ -132,7 +143,6 @@
 
                         @if (SignInManager.IsSignedIn(User))
                         {
-                            <!-- Utilisateur connecté -->
                             <li class="nav-item">
                                 <form method="post"
                                       asp-controller="Account"
@@ -147,7 +157,6 @@
                         }
                         else
                         {
-                            <!-- Register -->
                             <li class="nav-item">
                                 <a class="nav-link text-dark"
                                    asp-controller="Account"
@@ -156,7 +165,6 @@
                                 </a>
                             </li>
 
-                            <!-- Login -->
                             <li class="nav-item">
                                 <a class="nav-link text-dark"
                                    asp-controller="Account"
@@ -175,11 +183,26 @@
         </nav>
     </header>
 
-    <!-- CONTENU DES VUES -->
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+    <!-- Menu latéral + contenu principal -->
+    <div class="container-fluid">
+        <div class="row">
+
+            <!-- Menu latéral pour les catégories -->
+            <div class="col-md-2" id="sidebar" style="display: none;">
+                <p> </p>
+                <ul class="list-group">
+                    @await Html.PartialAsync("_CategoriesMenu", ViewData["Categories"])
+                </ul>
+            </div>
+
+            <!-- Contenu principal -->
+            <div class="col-md-12" id="mainContent">
+                <main role="main" class="pb-3">
+                    @RenderBody()
+                </main>
+            </div>
+
+        </div>
     </div>
 
     <!-- Footer -->

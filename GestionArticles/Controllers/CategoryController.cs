@@ -23,6 +23,7 @@ namespace GestionArticles.Controllers
         public ActionResult Index()
         {
             var categories = CategRepository.GetAll();
+            ViewData["Categories"] = categories;
 
             return View(categories);
         }
@@ -30,6 +31,9 @@ namespace GestionArticles.Controllers
         // GET: CategoryController/Details/5
         public ActionResult Details(int id)
         {
+            var categories = CategRepository.GetAll();
+            ViewData["Categories"] = categories;
+
             var category = CategRepository.GetById(id);
 
             if (category == null)
@@ -41,6 +45,9 @@ namespace GestionArticles.Controllers
         // GET: CategoryController/Create
         public ActionResult Create()
         {
+            var categories = CategRepository.GetAll();
+            ViewData["Categories"] = categories;
+
             return View();
         }
 
@@ -62,6 +69,9 @@ namespace GestionArticles.Controllers
         // GET: CategoryController/Edit/5
         public ActionResult Edit(int id)
         {
+            var categories = CategRepository.GetAll();
+            ViewData["Categories"] = categories;
+
             var category = CategRepository.GetById(id);
 
             if (category == null)
@@ -91,6 +101,9 @@ namespace GestionArticles.Controllers
         // GET: CategoryController/Delete/5
         public ActionResult Delete(int id)
         {
+            var categories = CategRepository.GetAll();
+            ViewData["Categories"] = categories;
+
             var category = CategRepository.GetById(id);
 
             if (category == null)

@@ -1,0 +1,244 @@
+﻿@model GestionArticles.ViewModels.OrderViewModel
+@{
+    ViewData["Title"] = "Passer la commande";
+}
+
+<style>
+    .checkout-wrapper {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .co-card {
+        border: 0;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(0,0,0,.08);
+    }
+
+    .co-title {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        margin-bottom: 1rem;
+    }
+
+        .co-title span {
+            font-size: 1.6rem;
+        }
+
+    .steps {
+        display: flex;
+        justify-content: space-between;
+        text-align: center;
+        margin: 1rem 0 2rem;
+        position: relative;
+    }
+
+        .steps::before {
+            content: "";
+            position: absolute;
+            top: 22px;
+            left: 12%;
+            right: 12%;
+            height: 3px;
+            background: #dee2e6;
+            z-index: 0;
+        }
+
+    .step {
+        flex: 1;
+        position: relative;
+        z-index: 1;
+    }
+
+    .step-dot {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto .4rem;
+        font-size: 1.3rem;
+    }
+
+    .step.done .step-dot {
+        background: #198754;
+        color: #fff;
+    }
+
+    .step.active .step-dot {
+        background: #0d6efd;
+        color: #fff;
+    }
+
+    .step small {
+        color: #6c757d;
+    }
+
+    .pay-option {
+        display: block;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        padding: .8rem 1rem;
+        cursor: pointer;
+        margin-bottom: .6rem;
+        transition: .15s;
+    }
+
+        .pay-option:hover {
+            border-color: #0d6efd;
+        }
+
+        .pay-option input {
+            margin-right: .6rem;
+        }
+
+        .pay-option:has(input:checked) {
+            border-color: #0d6efd;
+            background: #f0f6ff;
+        }
+
+    .total-box {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem 1.2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+        .total-box .amount {
+            color: #198754;
+        }
+</style>
+
+<div class="checkout-wrapper">
+
+    <h2 class="mb-3">Passer la commande</h2>
+
+    <!-- Étapes -->
+    <div class="steps">
+        <div class="step done">
+            <div class="step-dot">🛒</div>
+            <small>Panier</small>
+        </div>
+        <div class="step active">
+            <div class="step-dot">📝</div>
+            <small>Livraison et paiement</small>
+        </div>
+        <div class="step">
+            <div class="step-dot">✔</div>
+            <small>Confirmation</small>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">⚠️ @TempData["ErrorMessage"]</div>
+    }
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">✅ @TempData["SuccessMessage"]</div>
+    }
+
+    <div class="row g-4">
+
+        <!-- Formulaire -->
+        <div class="col-lg-6">
+            <form asp-action="Checkout" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="card co-card">
+                    <div class="card-body p-4">
+
+                        <div class="co-title"><span>📍</span><h4 class="mb-0">Adresse de livraison</h4></div>
+                        <div class="mb-4">
+                            <input type="text" class="form-control form-control-lg" id="Address" name="Address"
+                                   value="@Model.Address" placeholder="Rue, ville, code postal" required />
+                        </div>
+
+                        <div class="co-title"><span>💳</span><h4 class="mb-0">Méthode de paiement</h4></div>
+                        <div class="mb-4">
+                            <label class="pay-option">
+                                <input type="radio" name="PaymentMethod" value="CreditCard" checked />
+                                💳 Carte de crédit
+                            </label>
+                            <label class="pay-option">
+                                <input type="radio" name="PaymentMethod" value="Paypal" />
+                                🅿️ PayPal
+                            </label>
+                        </div>
+
+                        <div class="total-box mb-4">
+                            <span>Montant total :</span>
+                            <span class="amount">@Model.TotalAmount.ToString("N2")</span>
+                        </div>
+                        <input type="hidden" name="TotalAmount" value="@Model.TotalAmount" />
+
+                        @* Champs cachés pour les articles du panier *@
+                        @for (int i = 0; i < Model.CartItems.Count; i++)
+                        {
+                            <input type="hidden" name="CartItems[@i].ProductName" value="@Model.CartItems[i].ProductName" />
+                            <input type="hidden" name="CartItems[@i].Quantity" value="@Model.CartItems[i].Quantity" />
+                            <input type="hidden" name="CartItems[@i].Price" value="@Model.CartItems[i].Price" />
+                        }
+
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            ✅ Passer la commande
+                        </button>
+                        <a asp-action="Index" class="btn btn-link w-100 mt-2">← Retour au panier</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Récapitulatif du panier -->
+        <div class="col-lg-6">
+            <div class="card co-card">
+                <div class="card-body p-4">
+                    <div class="co-title"><span>🛍️</span><h4 class="mb-0">Votre panier</h4></div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Produit</th>
+                                    <th class="text-center">Qté</th>
+                                    <th class="text-end">Prix</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.CartItems)
+                                {
+                                    <tr>
+                                        <td>@item.ProductName</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary">@item.Quantity</span>
+                                        </td>
+                                        <td class="text-end">@item.Price.ToString("N2")</td>
+                                        <td class="text-end">@((item.Price * item.Quantity).ToString("N2"))</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bold">
+                                    <td colspan="3" class="text-end">Total :</td>
+                                    <td class="text-end text-success">@Model.TotalAmount.ToString("N2")</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <p class="text-muted small mb-0">🔒 Vos informations sont utilisées uniquement pour la livraison.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

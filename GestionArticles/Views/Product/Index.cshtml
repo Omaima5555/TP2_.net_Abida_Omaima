@@ -23,9 +23,20 @@
             <div class="card-footer text-center">
                 <a asp-controller="Product" asp-action="Details" asp-route-id="@product.ProductId"
                    class="btn btn-primary m-1">View</a>
-                <a asp-action="Edit" asp-controller="Product" class="btn btn-primary m-1" asp-route-id="@product.ProductId">Edit</a>
-                <a asp-action="Delete" asp-controller="Product" class="btn btn-danger m-1" asp-route-id="@product.ProductId">Delete</a>
+                <a asp-controller="Panier" asp-action="AddProduct" class="btn btn-outline-secondary" asp-route-id="@product.ProductId">Ajouter Au Panier</a>
+                
             </div>
         </div>
+    }
+</div>
+
+<!-- Pagination -->
+<div class="pagination">
+    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+    {
+        <a asp-action="Index" asp-route-categoryId="@ViewBag.CategoryId"
+           asp-route-page="@i" class="btn btn-secondary m-1">
+            @i
+        </a>
     }
 </div>

@@ -1,0 +1,26 @@
+﻿@model IEnumerable<GestionArticles.Models.Category>
+
+<div class="card shadow-sm">
+<div class="card-header bg-primary text-white">
+<h5 class="mb-0">Catégories</h5>
+</div>
+<ul class="list-group list-group-flush">
+@if (Model == null || !Model.Any())
+{
+<li class="list-group-item text-muted">Aucune catégorie disponible.</li>
+}
+else
+{
+@foreach (var categorie in Model)
+{
+<li class="list-group-item">
+<a class="text-decoration-none text-dark fw-semibold"
+asp-controller="Product" asp-action="Index"
+asp-route-categoryId="@categorie.CategoryId">
+@categorie.CategoryName
+</a>
+</li>
+}
+}
+</ul>
+</div>
