@@ -20,5 +20,10 @@ namespace GestionArticles.ViewModels
         [Required]
         [Display(Name = "Image :")]
         public IFormFile? ImagePath { get; set; }
+
+        [Range(0, 90, ErrorMessage = "La promotion doit être entre 0 et 90 %")]
+        [Display(Name = "Promotion (%)")]
+        public int PromoPercent { get; set; }
+
     }
 }

@@ -1,0 +1,231 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h2>📊 Tableau de bord</h2>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+    <label for="range" class="mb-0">Période :</label>
+    <select id="range" class="form-select" style="width:auto">
+        <option value="7">7 derniers jours</option>
+        <option value="30" selected>30 derniers jours</option>
+        <option value="90">90 derniers jours</option>
+        <option value="365">12 derniers mois</option>
+    </select>
+    <button id="refresh" class="btn btn-outline-secondary btn-sm">↻ Actualiser</button>
+</div>
+
+<div id="errorBox" class="alert alert-danger d-none"></div>
+
+@* ---------- Cartes ---------- *@
+<div class="row g-3 mb-4 text-center">
+    <div class="col-6 col-lg-2">
+        <div class="card h-100"><div class="card-body">
+            <small class="text-muted">Chiffre d'affaires</small>
+            <h4 class="mb-0"><span id="kRevenue">–</span> <small>TND</small></h4>
+            <span id="kGrowth" class="badge bg-secondary">–</span>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="card h-100"><div class="card-body">
+            <small class="text-muted">Commandes</small>
+            <h4 id="kOrders" class="mb-0">–</h4>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="card h-100"><div class="card-body">
+            <small class="text-muted">Panier moyen</small>
+            <h4 class="mb-0"><span id="kAvg">–</span> <small>TND</small></h4>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="card h-100"><div class="card-body">
+            <small class="text-muted">Clients actifs</small>
+            <h4 id="kCust" class="mb-0">–</h4>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="card h-100"><div class="card-body">
+            <small class="text-muted">Stock faible</small>
+            <h4 id="kLow" class="mb-0 text-danger">–</h4>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="card h-100"><div class="card-body">
+            <small class="text-muted">Note moyenne</small>
+            <h4 class="mb-0"><span id="kRating" style="color:#f5a623">–</span></h4>
+            <small id="kReviews" class="text-muted"></small>
+        </div></div>
+    </div>
+</div>
+
+@* ---------- Graphiques ---------- *@
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card h-100"><div class="card-body">
+            <h6>Chiffre d'affaires et commandes par jour</h6>
+            <canvas id="cDaily" height="120"></canvas>
+        </div></div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card h-100"><div class="card-body">
+            <h6>Ventes par catégorie</h6>
+            <canvas id="cCat"></canvas>
+            <p id="catEmpty" class="text-muted d-none mt-2">Pas de données par catégorie.</p>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h6>Top 5 produits vendus (quantités)</h6>
+            <canvas id="cTop" height="140"></canvas>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h6>🏆 Meilleurs clients</h6>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Client</th><th class="text-end">Commandes</th><th class="text-end">Total (TND)</th></tr></thead>
+                <tbody id="tCustomers"></tbody>
+            </table>
+        </div></div>
+    </div>
+</div>
+
+@* ---------- Tableaux ---------- *@
+<div class="row g-3 mb-4">
+    <div class="col-lg-5">
+        <div class="card h-100"><div class="card-body">
+            <h6>⚠️ Produits en stock faible (≤ 5)</h6>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Produit</th><th>Catégorie</th><th class="text-end">Stock</th></tr></thead>
+                <tbody id="tLow"></tbody>
+            </table>
+        </div></div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card h-100"><div class="card-body">
+            <h6>🕒 Dernières commandes</h6>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>N°</th><th>Client</th><th>Date</th><th class="text-end">Total (TND)</th></tr></thead>
+                <tbody id="tRecent"></tbody>
+            </table>
+        </div></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const charts = {};
+        const $id = id => document.getElementById(id);
+
+        function draw(id, config) {
+            if (charts[id]) charts[id].destroy();
+            charts[id] = new Chart($id(id), config);
+        }
+
+        // Remplit un tableau avec textContent (pas de HTML injecté)
+        function fillTable(id, rows, rightCols, emptyText) {
+            const tb = $id(id);
+            tb.innerHTML = '';
+            if (rows.length === 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = 4; td.className = 'text-muted'; td.textContent = emptyText;
+                tr.appendChild(td); tb.appendChild(tr);
+                return;
+            }
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                r.forEach((v, i) => {
+                    const td = document.createElement('td');
+                    td.textContent = v;
+                    if (rightCols.includes(i)) td.className = 'text-end';
+                    tr.appendChild(td);
+                });
+                tb.appendChild(tr);
+            });
+        }
+
+        async function load() {
+            const err = $id('errorBox');
+            err.classList.add('d-none');
+            try {
+                const res = await fetch('@Url.Action("Data", "Dashboard")?days=' + $id('range').value);
+                if (!res.ok) throw new Error('Erreur ' + res.status);
+                const j = await res.json();
+
+                // ----- Cartes -----
+                $id('kRevenue').textContent = j.kpis.revenue.toFixed(2);
+                $id('kOrders').textContent = j.kpis.orders;
+                $id('kAvg').textContent = j.kpis.avgBasket.toFixed(2);
+                $id('kCust').textContent = j.kpis.customers;
+                $id('kLow').textContent = j.kpis.lowStock;
+                $id('kRating').textContent = j.kpis.reviews > 0 ? '★ ' + j.kpis.avgRating + ' / 5' : '–';
+                $id('kReviews').textContent = j.kpis.reviews + ' avis';
+
+                const g = $id('kGrowth');
+                if (j.kpis.growth === null) {
+                    g.className = 'badge bg-secondary'; g.textContent = 'Pas de comparaison';
+                } else {
+                    const up = j.kpis.growth >= 0;
+                    g.className = 'badge ' + (up ? 'bg-success' : 'bg-danger');
+                    g.textContent = (up ? '▲ +' : '▼ ') + j.kpis.growth + ' % vs période préc.';
+                }
+
+                // ----- Graphique : CA + commandes par jour -----
+                draw('cDaily', {
+                    type: 'bar',
+                    data: {
+                        labels: j.labels,
+                        datasets: [
+                            { type: 'line', label: 'CA (TND)', data: j.revenueDaily, yAxisID: 'y', tension: 0.3 },
+                            { type: 'bar', label: 'Commandes', data: j.ordersDaily, yAxisID: 'y1' }
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            y: { beginAtZero: true, title: { display: true, text: 'TND' } },
+                            y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { precision: 0 } }
+                        }
+                    }
+                });
+
+                // ----- Catégories -----
+                $id('catEmpty').classList.toggle('d-none', j.byCategory.length > 0);
+                draw('cCat', {
+                    type: 'doughnut',
+                    data: {
+                        labels: j.byCategory.map(x => x.name),
+                        datasets: [{ data: j.byCategory.map(x => Math.round(x.total * 100) / 100) }]
+                    }
+                });
+
+                // ----- Top produits -----
+                draw('cTop', {
+                    type: 'bar',
+                    data: {
+                        labels: j.top.map(x => x.name),
+                        datasets: [{ label: 'Quantité vendue', data: j.top.map(x => x.qty) }]
+                    },
+                    options: { indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+                });
+
+                // ----- Tableaux -----
+                fillTable('tCustomers', j.topCustomers.map(c => [c.email, c.count, c.total.toFixed(2)]), [1, 2], 'Aucune vente sur la période.');
+                fillTable('tLow', j.lowStock.map(p => [p.name, p.category, p.qty]), [2], 'Aucun produit en stock faible 👍');
+                fillTable('tRecent', j.recent.map(o => ['#' + o.id, o.email, o.date, o.total.toFixed(2)]), [3], 'Aucune commande.');
+            } catch (e) {
+                err.textContent = 'Impossible de charger les statistiques. ' + e.message;
+                err.classList.remove('d-none');
+            }
+        }
+
+        $id('range').addEventListener('change', load);
+        $id('refresh').addEventListener('click', load);
+        load();
+    </script>
+}

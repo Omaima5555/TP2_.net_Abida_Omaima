@@ -1,195 +1,162 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @inject SignInManager<IdentityUser> SignInManager
 
+@{
+    // Contrôleur courant : sert à surligner le lien actif dans le menu
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string Active(params string[] controllers) =>
+        controllers.Any(c => string.Equals(c, currentController, StringComparison.OrdinalIgnoreCase))
+            ? "active fw-semibold" : "";
+
+    bool isSignedIn = SignInManager.IsSignedIn(User);
+    bool isAdmin = isSignedIn && User.IsInRole("Admin");
+}
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>@ViewData["Title"] - GestionArticles</title>
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/GestionArticles.styles.css" asp-append-version="true" />
+
+    <style>
+        .navbar-brand { font-weight: 700; letter-spacing: .3px; }
+        .navbar .nav-link { font-weight: 500; }
+        .navbar .nav-link.active { color: #198754 !important; }
+        .dropdown-menu { border: 0; border-radius: .6rem; box-shadow: 0 6px 18px rgba(0,0,0,.15); }
+        .dropdown-item { padding: .5rem 1rem; }
+        #toggleMenu { cursor: pointer; }
+        #sidebar { transition: all .2s ease; }
+        .flash-area { max-width: 960px; margin: 0 auto; }
+    </style>
 </head>
 
 <body>
 
+    <!-- ===================== EN-TÊTE / NAVBAR ===================== -->
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-
+        <nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm sticky-top">
             <div class="container-fluid">
 
-                <!-- Bouton afficher / cacher le menu latéral des catégories -->
-                <button class="btn btn-outline-primary" type="button">
+                <!-- Bouton : afficher / cacher le menu latéral des catégories -->
+                <button class="btn btn-outline-primary me-2" type="button" title="Catégories">
                     <img src="~/images/categorie.jpg"
                          alt="Ouvrir la liste des catégories"
                          id="toggleMenu"
                          style="width:30px;height:30px" />
                 </button>
 
-                <!-- Logo / Nom du site -->
-                <a class="navbar-brand"
-                   asp-area=""
-                   asp-controller="Home"
-                   asp-action="Index">
-                    Gestion des Articles
+                <!-- Nom du site -->
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    🛒 Gestion des Articles
                 </a>
 
-                <!-- Bouton mobile -->
-                <button class="navbar-toggler"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target=".navbar-collapse"
-                        aria-controls="navbarSupportedContent"
-                        aria-expanded="false"
-                        aria-label="Toggle navigation">
+                <!-- Bouton menu mobile -->
+                <button class="navbar-toggler" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                        aria-controls="mainNavbar" aria-expanded="false" aria-label="Menu">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                <div class="collapse navbar-collapse" id="mainNavbar">
 
-                    <!-- Menu principal -->
-                    <ul class="navbar-nav flex-grow-1">
+                    <!-- ========== Menu principal (gauche) ========== -->
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-                        <!-- Home -->
                         <li class="nav-item">
-                            <a class="nav-link text-dark"
-                               asp-area=""
-                               asp-controller="Home"
-                               asp-action="Index">
+                            <a class="nav-link @Active("Home")" asp-area="" asp-controller="Home" asp-action="Index">
                                 Home
                             </a>
                         </li>
 
-                        <!-- Administration (visible seulement pour le rôle Admin) -->
-                        @if (SignInManager.IsSignedIn(User) && User.IsInRole("Admin"))
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark"
-                                   data-bs-toggle="dropdown"
-                                   href="#"
-                                   role="button"
-                                   aria-haspopup="true"
-                                   aria-expanded="false">
-                                    Administration
-                                </a>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item"
-                                       asp-controller="Admin"
-                                       asp-action="CreateRole">
-                                        Create Role
-                                    </a>
-                                    <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item"
-                                       asp-controller="Admin"
-                                       asp-action="ListRoles">
-                                        List Roles
-                                    </a>
-                                </div>
-                            </li>
-                        }
-
-                        <!-- Liste d'articles (dropdown) -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark"
-                               data-bs-toggle="dropdown"
-                               href="#"
-                               role="button"
-                               aria-haspopup="true"
-                               aria-expanded="false">
+                            <a class="nav-link dropdown-toggle @Active("Product", "Category")"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Liste d'articles
                             </a>
                             <div class="dropdown-menu">
-                                <a class="dropdown-item"
-                                   asp-controller="Product"
-                                   asp-action="Index">
-                                    Produits
-                                </a>
-                                <a class="dropdown-item"
-                                   asp-controller="Category"
-                                   asp-action="Index">
-                                    Catégories
-                                </a>
+                                <a class="dropdown-item" asp-controller="Product" asp-action="Index">📦 Produits</a>
+                                <a class="dropdown-item" asp-controller="Category" asp-action="Index">🗂️ Catégories</a>
                             </div>
                         </li>
-                        <li class="nav-item">
 
-                        <a class="nav-link text-dark" asp-controller="Panier" asp-action="Index">Mon Panier</a>
-
-                         </li>
-
-                    </ul>
-
-                    <!-- Recherche -->
-                    <form class="d-flex"
-                          asp-area=""
-                          asp-controller="Product"
-                          asp-action="Search">
-                        <input class="form-control me-sm-2"
-                               type="search"
-                               placeholder="Search"
-                               name="val" />
-                        <button class="btn btn-secondary my-2 my-sm-0"
-                                type="submit">
-                            Search
-                        </button>
-                    </form>
-
-                    <!-- Menu Identity (Login / Register / Logout) -->
-                    <ul class="navbar-nav ms-auto">
-
-                        @if (SignInManager.IsSignedIn(User))
+                        @if (isSignedIn)
                         {
                             <li class="nav-item">
-                                <form method="post"
-                                      asp-controller="Account"
-                                      asp-action="Logout">
-                                    <button type="submit"
-                                            style="width:auto"
-                                            class="nav-link btn btn-link py-0">
-                                        Logout @User.Identity?.Name
-                                    </button>
-                                </form>
+                                <a class="nav-link @Active("Panier")" asp-controller="Panier" asp-action="Index">
+                                    🛍️ Mon panier
+                                </a>
+                            </li>
+                        }
+
+                        @if (isAdmin)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle @Active("Admin", "Dashboard")"
+                                   href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    ⚙️ Administration
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" asp-controller="Dashboard" asp-action="Index">📊 Dashboard</a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" asp-controller="Admin" asp-action="ListRoles">📋 List Roles</a>
+                                    <a class="dropdown-item" asp-controller="Admin" asp-action="CreateRole">➕ Create Role</a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+
+                    <!-- ========== Recherche ========== -->
+                    <form class="d-flex me-lg-3 mb-2 mb-lg-0" role="search"
+                          asp-area="" asp-controller="Product" asp-action="Search">
+                        <input class="form-control me-2" type="search" placeholder="Rechercher un produit..." name="val" />
+                        <button class="btn btn-success" type="submit">Search</button>
+                    </form>
+
+                    <!-- ========== Compte (droite) ========== -->
+                    <ul class="navbar-nav mb-2 mb-lg-0">
+                        @if (isSignedIn)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button"
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                    👤 @User.Identity?.Name
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <form method="post" asp-controller="Account" asp-action="Logout">
+                                        <button type="submit" class="dropdown-item">🚪 Logout</button>
+                                    </form>
+                                </div>
                             </li>
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                   asp-controller="Account"
-                                   asp-action="Register">
-                                    Register
-                                </a>
+                                <a class="nav-link @Active("Account")" asp-controller="Account" asp-action="Login">Login</a>
                             </li>
-
                             <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                   asp-controller="Account"
-                                   asp-action="Login">
-                                    Login
-                                </a>
+                                <a class="btn btn-outline-success ms-lg-2" asp-controller="Account" asp-action="Register">Register</a>
                             </li>
                         }
-
                     </ul>
 
                 </div>
-
             </div>
-
         </nav>
     </header>
 
-    <!-- Menu latéral + contenu principal -->
+    <!-- ===================== MENU LATÉRAL + CONTENU ===================== -->
     <div class="container-fluid">
         <div class="row">
 
-            <!-- Menu latéral pour les catégories -->
+            <!-- Menu latéral des catégories (affiché par le bouton de la navbar) -->
             <div class="col-md-2" id="sidebar" style="display: none;">
-                <p> </p>
+                <p></p>
                 <ul class="list-group">
                     @await Html.PartialAsync("_CategoriesMenu", ViewData["Categories"])
                 </ul>
@@ -198,6 +165,25 @@
             <!-- Contenu principal -->
             <div class="col-md-12" id="mainContent">
                 <main role="main" class="pb-3">
+
+                    <!-- Messages flash (succès / erreur) -->
+                    <div class="flash-area">
+                        @if (TempData["SuccessMessage"] != null)
+                        {
+                            <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+                                @TempData["SuccessMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                            </div>
+                        }
+                        @if (TempData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+                                @TempData["ErrorMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                            </div>
+                        }
+                    </div>
+
                     @RenderBody()
                 </main>
             </div>
@@ -205,25 +191,24 @@
         </div>
     </div>
 
-    <!-- Footer -->
+    <!-- ===================== PIED DE PAGE ===================== -->
     <footer class="border-top footer text-muted">
         <div class="container">
             &copy; 2026 - GestionArticles -
-            <a asp-area=""
-               asp-controller="Home"
-               asp-action="Privacy">
-                Privacy
-            </a>
+            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
 
-    <!-- Scripts -->
+    <!-- ===================== SCRIPTS ===================== -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/CustomScript.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- Chatbot de la boutique -->
+    @await Html.PartialAsync("_ChatWidget")
 
 </body>
 

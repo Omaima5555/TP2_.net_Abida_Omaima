@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GestionArticles.Models
 {
@@ -19,5 +20,14 @@ namespace GestionArticles.Models
         [Required]
         [Display(Name = "Image :")]
         public string? Image { get; set; }
+
+        [Range(0, 90, ErrorMessage = "La promotion doit être entre 0 et 90 %")]
+        [Display(Name = "Promotion (%)")]
+        public int PromoPercent { get; set; }      // 0 = pas de promotion
+
+        [NotMapped]
+        public float FinalPrice =>
+            PromoPercent > 0 ? (float)Math.Round(Price * (100 - PromoPercent) / 100.0, 2) : Price;
+
     }
 }

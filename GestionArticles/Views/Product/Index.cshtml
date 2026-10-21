@@ -1,42 +1,142 @@
 @model IEnumerable<GestionArticles.Models.Product>
+
 @{
     ViewData["Title"] = "Liste des produits";
+
+    // Peuvent être null si la vue est appelée depuis une autre action (ex : Search)
+    int totalPages = (int?)ViewBag.TotalPages ?? 1;
+    int currentPage = (int?)ViewBag.CurrentPage ?? 1;
+    bool canManage = User.IsInRole("Admin") || User.IsInRole("Manager");
 }
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<div class="card-group">
-    
-    @foreach (var product in Model)
+
+<div class="container-fluid mt-3">
+
+    <!-- ===== En-tête de page ===== -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h1 class="mb-0">🛍️ Liste des produits</h1>
+            <small class="text-muted">@Model.Count() produit(s) sur cette page</small>
+        </div>
+
+        @* Bouton réservé à l'Admin et au Manager *@
+        @if (canManage)
+        {
+            <a asp-action="Create" class="btn btn-success">➕ Nouveau produit</a>
+        }
+    </div>
+
+    @if (!Model.Any())
     {
-        var photoPath = "~/images/" + (product.Image ?? "noimage.jpg");
-        <div class="card m-3" style="min-width: 18rem; max-width:30.5%;">
-            <div class="card-header">
-                <h5><b>Nom : </b> @product.Name</h5>
-                <h5><b>Prix : </b>@product.Price</h5>
-                <h5><b>Quantité : </b> @product.QteStock</h5>
-                <!--Afficher le nom de la catégorie-->
-                <h5><b>Catégorie : @product.Category.CategoryName </b></h5>
-            </div>
-            <!-- Ajout de la classe pour contrôler la taille des images -->
-            <img class="card-img-top imageThumbnail" src="@photoPath" asp-append-version="true" />
-            <div class="card-footer text-center">
-                <a asp-controller="Product" asp-action="Details" asp-route-id="@product.ProductId"
-                   class="btn btn-primary m-1">View</a>
-                <a asp-controller="Panier" asp-action="AddProduct" class="btn btn-outline-secondary" asp-route-id="@product.ProductId">Ajouter Au Panier</a>
-                
+        <!-- ===== Aucun produit ===== -->
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-5">
+                <h4>Aucun produit à afficher</h4>
+                <p class="text-muted mb-0">Essayez une autre catégorie ou revenez plus tard.</p>
             </div>
         </div>
     }
-</div>
-
-<!-- Pagination -->
-<div class="pagination">
-    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+    else
     {
-        <a asp-action="Index" asp-route-categoryId="@ViewBag.CategoryId"
-           asp-route-page="@i" class="btn btn-secondary m-1">
-            @i
-        </a>
+        <!-- ===== Grille de produits ===== -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+
+            @foreach (var product in Model)
+            {
+                var photoPath = "~/images/" + (product.Image ?? "noimage.jpg");
+                bool hasPromo = product.PromoPercent > 0;
+                bool outOfStock = product.QteStock <= 0;
+
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+
+                        <!-- Image + badges -->
+                        <div class="position-relative">
+                            <img src="@photoPath" asp-append-version="true" class="card-img-top"
+                                 style="height:220px; object-fit:cover" alt="@product.Name" />
+
+                            @if (hasPromo)
+                            {
+                                <span class="badge bg-danger position-absolute top-0 end-0 m-2 fs-6">-@product.PromoPercent%</span>
+                            }
+
+                            @if (outOfStock)
+                            {
+                                <span class="badge bg-secondary position-absolute top-0 start-0 m-2">Rupture</span>
+                            }
+                            else if (product.QteStock <= 5)
+                            {
+                                <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2">Stock limité</span>
+                            }
+                        </div>
+
+                        <!-- Infos -->
+                        <div class="card-body">
+                            <small class="text-muted">@product.Category?.CategoryName</small>
+                            <h5 class="card-title mb-2">@product.Name</h5>
+
+                            <div class="mb-2">
+                                @if (hasPromo)
+                                {
+                                    <span class="fs-5 fw-bold text-danger">@product.FinalPrice.ToString("0.00") TND</span>
+                                    <span class="text-muted text-decoration-line-through ms-1">@product.Price.ToString("0.00")</span>
+                                }
+                                else
+                                {
+                                    <span class="fs-5 fw-bold">@product.Price.ToString("0.00") TND</span>
+                                }
+                            </div>
+
+                            <small class="text-muted">Quantité en stock : @product.QteStock</small>
+                        </div>
+
+                        <!-- Boutons -->
+                        <div class="card-footer bg-white d-flex flex-wrap justify-content-center gap-2">
+                            <a asp-controller="Product" asp-action="Details" asp-route-id="@product.ProductId"
+                               class="btn btn-primary btn-sm">👁️ Voir</a>
+
+                            @* Panier : réservé au client (invisible pour Admin et Manager) *@
+                            @if (!canManage)
+                            {
+                                if (outOfStock)
+                                {
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" disabled>Rupture de stock</button>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Panier" asp-action="AddProduct" asp-route-id="@product.ProductId"
+                                       class="btn btn-outline-success btn-sm">🛒 Ajouter au panier</a>
+                                }
+                            }
+
+                            @* Gestion : Admin et Manager seulement *@
+                            @if (canManage)
+                            {
+                                <a asp-controller="Product" asp-action="Edit" asp-route-id="@product.ProductId"
+                                   class="btn btn-outline-warning btn-sm">✏️ Modifier</a>
+                                <a asp-controller="Product" asp-action="Delete" asp-route-id="@product.ProductId"
+                                   class="btn btn-outline-danger btn-sm">🗑️ Supprimer</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
     }
+
+    <!-- ===== Pagination (affichée seulement s'il y a plusieurs pages) ===== -->
+    @if (totalPages > 1)
+    {
+        <nav class="mt-4" aria-label="Pagination des produits">
+            <ul class="pagination justify-content-center">
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    <li class="page-item @(i == currentPage ? "active" : "")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-categoryId="@ViewBag.CategoryId" asp-route-page="@i">@i</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+
 </div>

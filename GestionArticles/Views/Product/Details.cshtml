@@ -1,73 +1,171 @@
 @model GestionArticles.Models.Product
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Détails du produit";
     var photoPath = "~/images/" + (Model.Image ?? "noimage.jpg");
+
+    // Données préparées par ProductController.Details
+    var reviews = (List<GestionArticles.Models.Review>)ViewBag.Reviews;
+    double avg = ViewBag.AvgRating;
+    int count = ViewBag.ReviewCount;
+    int fullStars = (int)Math.Round(avg);
+
+    bool canManage = User.IsInRole("Admin") || User.IsInRole("Manager");
+    bool hasPromo = Model.PromoPercent > 0;
+    bool outOfStock = Model.QteStock <= 0;
 }
 
-<h1>Details</h1>
+<div class="container mt-4">
 
-<div>
-    <h4>Product</h4>
-    <hr />
+    <!-- Fil d'Ariane -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Produits</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+        </ol>
+    </nav>
 
-    <dl class="row">
+    <div class="row g-4">
 
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Name)
-        </dt>
-
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Name)
-        </dd>
-
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Price)
-        </dt>
-
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Price)
-        </dd>
-
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.QteStock)
-        </dt>
-
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.QteStock)
-        </dd>
-
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Category)
-        </dt>
-
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Category.CategoryName)
-        </dd>
-
-        <dt class="col-sm-2">
-            <label><b>Image</b></label>
-        </dt>
-
-        <dd class="col-sm-10">
-            <div class="card-body text-left">
-                <img src="@photoPath"
-                     asp-append-version="true"
-                     height="100"
-                     width="100" />
+        <!-- ===== Image ===== -->
+        <div class="col-md-5">
+            <div class="card shadow-sm position-relative">
+                @if (hasPromo)
+                {
+                    <span class="badge bg-danger position-absolute top-0 end-0 m-3 fs-6">-@Model.PromoPercent%</span>
+                }
+                <img src="@photoPath" asp-append-version="true" class="card-img-top"
+                     style="height:380px; object-fit:cover" alt="@Model.Name" />
             </div>
-        </dd>
+        </div>
 
-    </dl>
-</div>
+        <!-- ===== Informations ===== -->
+        <div class="col-md-7">
+            <h1 class="mb-1">@Model.Name</h1>
+            <span class="badge bg-primary mb-2">@Model.Category?.CategoryName</span>
 
-<div>
-    <a asp-action="Edit"
-       asp-route-id="@Model?.ProductId">
-        Edit
-    </a>
-    |
-    <a asp-action="Index">
-        Back to List
-    </a>
+            <!-- Note moyenne -->
+            <div class="mb-3">
+                @if (count == 0)
+                {
+                    <span class="text-muted">Aucun avis pour le moment</span>
+                }
+                else
+                {
+                    <span style="color:#f5a623; font-size:1.3rem">
+                        @(new string('★', fullStars))@(new string('☆', 5 - fullStars))
+                    </span>
+                    <a href="#avis" class="text-decoration-none ms-1"><strong>@avg</strong> / 5 (@count avis)</a>
+                }
+            </div>
+
+            <!-- Prix -->
+            <div class="mb-3">
+                @if (hasPromo)
+                {
+                    <span class="display-6 text-danger fw-bold">@Model.FinalPrice.ToString("0.00") TND</span>
+                    <span class="text-muted text-decoration-line-through ms-2">@Model.Price.ToString("0.00")</span>
+                }
+                else
+                {
+                    <span class="display-6 fw-bold">@Model.Price.ToString("0.00") TND</span>
+                }
+            </div>
+
+            <!-- Stock -->
+            <p class="mb-4">
+                @if (outOfStock)
+                {
+                    <span class="badge bg-secondary fs-6">Rupture de stock</span>
+                }
+                else if (Model.QteStock <= 5)
+                {
+                    <span class="badge bg-warning text-dark fs-6">⚠️ Plus que @Model.QteStock en stock</span>
+                }
+                else
+                {
+                    <span class="badge bg-success fs-6">✅ En stock (@Model.QteStock)</span>
+                }
+            </p>
+
+            <!-- Actions -->
+            <div class="d-flex flex-wrap gap-2">
+                @* Panier : réservé au client (invisible pour Admin et Manager) *@
+                @if (!canManage && !outOfStock)
+                {
+                    <a asp-controller="Panier" asp-action="AddProduct" asp-route-id="@Model.ProductId"
+                       class="btn btn-success btn-lg">🛒 Ajouter au panier</a>
+                }
+
+                @if (canManage)
+                {
+                    <a asp-action="Edit" asp-route-id="@Model.ProductId" class="btn btn-warning">✏️ Modifier</a>
+                }
+                <a asp-action="Index" class="btn btn-outline-secondary">← Retour à la liste</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== AVIS ===================== -->
+    <hr class="my-5" />
+    <h3 id="avis">Avis des clients</h3>
+
+    @if (count == 0)
+    {
+        <p class="text-muted">Aucun avis pour le moment.</p>
+    }
+    else
+    {
+        foreach (var r in reviews)
+        {
+            <div class="card mb-2 shadow-sm">
+                <div class="card-body py-2">
+                    <span style="color:#f5a623">
+                        @(new string('★', r.Rating))@(new string('☆', 5 - r.Rating))
+                    </span>
+                    <strong class="ms-2">@r.UserName</strong>
+                    <small class="text-muted ms-2">@r.CreatedAt.ToString("dd/MM/yyyy")</small>
+                    @if (!string.IsNullOrWhiteSpace(r.Comment))
+                    {
+                        <p class="mb-0 mt-1">@r.Comment</p>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+    @if (ViewBag.CanReview == true)
+    {
+        <div class="card mt-4 shadow-sm">
+            <div class="card-header">⭐ Donnez votre avis</div>
+            <div class="card-body">
+                <form asp-controller="Review" asp-action="Add" method="post">
+                    <input type="hidden" name="productId" value="@Model.ProductId" />
+
+                    <div class="mb-3">
+                        <label class="form-label">Note</label>
+                        <select name="rating" class="form-select" style="width:auto" required>
+                            <option value="5">★★★★★ (5)</option>
+                            <option value="4">★★★★☆ (4)</option>
+                            <option value="3">★★★☆☆ (3)</option>
+                            <option value="2">★★☆☆☆ (2)</option>
+                            <option value="1">★☆☆☆☆ (1)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Commentaire (facultatif)</label>
+                        <textarea name="comment" class="form-control" rows="3" maxlength="500"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Envoyer mon avis</button>
+                </form>
+            </div>
+        </div>
+    }
+    else if (ViewBag.AlreadyReviewed == true)
+    {
+        <p class="text-success mt-3">Vous avez déjà donné votre avis sur ce produit ✔</p>
+    }
+
 </div>

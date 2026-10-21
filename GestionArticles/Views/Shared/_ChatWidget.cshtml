@@ -1,0 +1,299 @@
+﻿@{
+    // Le rôle sert uniquement à adapter l'AFFICHAGE. Le vrai choix du bot se fait côté serveur (ChatController).
+    bool isAdmin = User.IsInRole("Admin");
+    bool isManager = User.IsInRole("Manager");
+    bool isStaff = isAdmin || isManager;
+
+    string userName = User.Identity?.IsAuthenticated == true ? (User.Identity?.Name ?? "") : "";
+    string color = isAdmin ? "#0d3b66" : isManager ? "#6f42c1" : "#198754";
+    string title = isAdmin ? "📊 Assistant Admin" : isManager ? "🧰 Assistant Gestion" : "🤖 Assistant de la boutique";
+    string placeholder = isStaff ? "Ex : quels produits sont presque épuisés ?" : "Posez votre question...";
+
+    string[] chips = isAdmin
+        ? new[] { "Bilan du jour", "Stock faible", "Top ventes", "Produits invendus", "Mauvais avis", "Idées de promo", "Meilleurs clients" }
+        : isManager
+            ? new[] { "Stock faible", "Top ventes", "Produits invendus", "Mauvais avis", "Idées de promo" }
+            : new[] { "Promotions", "Meilleurs produits", "Recommande-moi un produit", "Ma dernière commande" };
+
+    string hello = userName != "" ? $"Bonjour {userName} 👋 " : "Bonjour 👋 ";
+    string welcome = isAdmin
+        ? hello + "Je suis votre assistant de gestion : bilan, ventes, stock, produits invendus, avis négatifs, idées de promo."
+        : isManager
+            ? hello + "Je peux vous aider sur le stock, les produits invendus, les avis et les idées de promo."
+            : hello + "Je peux vous recommander des produits, vérifier la disponibilité et vous informer sur les promotions.";
+}
+
+<style>
+    #chatRoot {
+        --chat-color: @color;
+    }
+
+    #chatToggle {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        z-index: 2000;
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        border: none;
+        background: var(--chat-color);
+        color: #fff;
+        font-size: 26px;
+        box-shadow: 0 4px 12px rgba(0,0,0,.3);
+        cursor: pointer;
+    }
+
+    #chatBox {
+        position: fixed;
+        right: 20px;
+        bottom: 90px;
+        z-index: 2000;
+        width: 350px;
+        max-width: 92vw;
+        height: 500px;
+        max-height: 75vh;
+        background: #fff;
+        border-radius: 12px;
+        display: none;
+        flex-direction: column;
+        box-shadow: 0 6px 24px rgba(0,0,0,.3);
+        overflow: hidden;
+    }
+
+        #chatBox.open {
+            display: flex;
+        }
+
+    #chatHeader {
+        background: var(--chat-color);
+        color: #fff;
+        padding: 10px 14px;
+        font-weight: 600;
+    }
+
+    #chatList {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+        background: #f6f7f9;
+    }
+
+    .cmsg {
+        max-width: 88%;
+        padding: 8px 12px;
+        border-radius: 14px;
+        margin-bottom: 8px;
+        white-space: pre-line;
+        word-wrap: break-word;
+        font-size: 14px;
+    }
+
+        .cmsg.user {
+            background: var(--chat-color);
+            color: #fff;
+            margin-left: auto;
+        }
+
+        .cmsg.bot {
+            background: #fff;
+            border: 1px solid #e3e3e3;
+        }
+
+    .pcard {
+        display: flex;
+        gap: 8px;
+        background: #fff;
+        border: 1px solid #e3e3e3;
+        border-radius: 10px;
+        padding: 8px;
+        margin-bottom: 8px;
+        font-size: 13px;
+    }
+
+        .pcard img {
+            width: 56px;
+            height: 56px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .pcard .old {
+            text-decoration: line-through;
+            color: #888;
+            margin-left: 4px;
+        }
+
+        .pcard .badge-promo {
+            background: #dc3545;
+            color: #fff;
+            border-radius: 6px;
+            padding: 0 5px;
+            margin-left: 4px;
+        }
+
+        .pcard a {
+            margin-right: 8px;
+        }
+
+    #chatChips {
+        padding: 6px 10px 0;
+        background: #f6f7f9;
+        max-height: 84px;
+        overflow-y: auto;
+    }
+
+        #chatChips button {
+            border: 1px solid var(--chat-color);
+            background: #fff;
+            color: var(--chat-color);
+            border-radius: 14px;
+            padding: 2px 10px;
+            margin: 0 4px 4px 0;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+    #chatForm {
+        display: flex;
+        border-top: 1px solid #ddd;
+    }
+
+    #chatInput {
+        flex: 1;
+        border: none;
+        padding: 10px;
+        outline: none;
+    }
+
+    #chatForm button {
+        border: none;
+        background: var(--chat-color);
+        color: #fff;
+        padding: 0 16px;
+        cursor: pointer;
+    }
+</style>
+
+<div id="chatRoot">
+    <button id="chatToggle" type="button" aria-label="Ouvrir le chat">💬</button>
+
+    <div id="chatBox">
+        @Html.AntiForgeryToken()
+        <div id="chatHeader">@title</div>
+        <div id="chatList"></div>
+        <div id="chatChips">
+            @foreach (var c in chips)
+            {
+                <button type="button">@c</button>
+            }
+        </div>
+        <form id="chatForm" autocomplete="off">
+            <input id="chatInput" maxlength="300" placeholder="@placeholder" />
+            <button type="submit">Envoyer</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function () {
+      const IS_STAFF = @(isStaff ? "true" : "false");
+      const WELCOME = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(welcome));
+
+      const box = document.getElementById('chatBox');
+      const list = document.getElementById('chatList');
+      const input = document.getElementById('chatInput');
+      const token = box.querySelector('input[name="__RequestVerificationToken"]').value;
+      const history = [];
+
+      document.getElementById('chatToggle').addEventListener('click', () => {
+        box.classList.toggle('open');
+        if (box.classList.contains('open') && list.children.length === 0) add('bot', WELCOME);
+        input.focus();
+      });
+
+      function add(role, text) {
+        const d = document.createElement('div');
+        d.className = 'cmsg ' + role;
+        d.textContent = text;                       // textContent : pas de XSS
+        list.appendChild(d);
+        list.scrollTop = list.scrollHeight;
+        return d;
+      }
+
+      function link(href, label) {
+        const a = document.createElement('a');
+        a.href = href; a.textContent = label;
+        return a;
+      }
+
+      function card(p) {
+        const c = document.createElement('div'); c.className = 'pcard';
+        if (p.image) {
+          const img = document.createElement('img');
+          img.src = '/images/' + encodeURIComponent(p.image);
+          c.appendChild(img);
+        }
+        const b = document.createElement('div');
+
+        const n = document.createElement('strong'); n.textContent = p.name; b.appendChild(n);
+        b.appendChild(document.createElement('br'));
+
+        const price = document.createElement('span');
+        price.textContent = p.price.toFixed(2) + ' TND';
+        b.appendChild(price);
+        if (p.oldPrice) {
+          const o = document.createElement('span'); o.className = 'old'; o.textContent = p.oldPrice.toFixed(2);
+          const pr = document.createElement('span'); pr.className = 'badge-promo'; pr.textContent = '-' + p.promoPercent + '%';
+          b.appendChild(o); b.appendChild(pr);
+        }
+        b.appendChild(document.createElement('br'));
+
+        const s = document.createElement('span');
+        s.textContent = p.qty > 0 ? (p.qty <= 5 ? '⚠️ Plus que ' + p.qty : '✅ ' + p.qty + ' en stock') : '❌ Rupture';
+        b.appendChild(s);
+        if (p.reviewCount > 0) {
+          const r = Math.round(p.rating);
+          const st = document.createElement('span');
+          st.style.color = '#f5a623'; st.style.marginLeft = '6px';
+          st.textContent = '★'.repeat(r) + '☆'.repeat(5 - r) + ' ' + p.rating;
+          b.appendChild(st);
+        }
+        b.appendChild(document.createElement('br'));
+
+        b.appendChild(link('/Product/Details/' + p.id, 'Détails'));
+        if (IS_STAFF) b.appendChild(link('/Product/Edit/' + p.id, 'Modifier'));
+        else if (p.qty > 0) b.appendChild(link('/Panier/AddProduct/' + p.id, 'Ajouter au panier'));
+
+        c.appendChild(b);
+        return c;
+      }
+
+      async function send(text) {
+        text = (text || '').trim();
+        if (!text) return;
+        add('user', text);
+        input.value = '';
+        const typing = add('bot', '…');
+        try {
+          const res = await fetch('@Url.Action("Ask", "Chat")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+            body: JSON.stringify({ message: text, history: history.slice(-6) })
+          });
+          if (res.status === 429) { typing.textContent = 'Vous écrivez trop vite, patientez un instant ⏳'; return; }
+          if (!res.ok) { typing.textContent = 'Désolé, une erreur est survenue.'; return; }
+          const data = await res.json();
+          typing.textContent = data.text;
+          (data.products || []).forEach(p => list.appendChild(card(p)));
+          list.scrollTop = list.scrollHeight;
+          history.push({ role: 'user', content: text }, { role: 'assistant', content: data.text });
+        } catch (e) {
+          typing.textContent = 'Désolé, le service est indisponible.';
+        }
+      }
+
+      document.getElementById('chatForm').addEventListener('submit', e => { e.preventDefault(); send(input.value); });
+      document.querySelectorAll('#chatChips button').forEach(b => b.addEventListener('click', () => send(b.textContent)));
+    })();
+</script>

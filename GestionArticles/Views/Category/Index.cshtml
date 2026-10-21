@@ -1,41 +1,96 @@
 @model IEnumerable<GestionArticles.Models.Category>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Catégories";
+    bool canManage = User.IsInRole("Admin") || User.IsInRole("Manager");
 }
 
-<h1>Index</h1>
+<div class="container mt-3">
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.CategoryName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Products)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(model => item.CategoryName)
-            </td>
-            <td>
-                @Html.DisplayFor(model => item.Products)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.CategoryId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.CategoryId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.CategoryId">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    <!-- ===== En-tête de page ===== -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="mb-0">🗂️ Catégories</h1>
+            <small class="text-muted">@Model.Count() catégorie(s) disponible(s)</small>
+        </div>
+
+        @* Bouton réservé à l'Admin et au Manager *@
+        @if (canManage)
+        {
+            <a asp-action="Create" class="btn btn-success">➕ Nouvelle catégorie</a>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <!-- ===== Aucune catégorie ===== -->
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-5">
+                <h4>Aucune catégorie pour le moment</h4>
+                @if (canManage)
+                {
+                    <p class="text-muted">Commencez par en créer une.</p>
+                    <a asp-action="Create" class="btn btn-success">➕ Créer une catégorie</a>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- ===== Tableau des catégories ===== -->
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:60px">#</th>
+                            <th>Catégorie</th>
+                            <th class="text-center">Produits</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-muted">@item.CategoryId</td>
+
+                                <td>
+                                    <strong>@item.CategoryName</strong>
+                                </td>
+
+                                <td class="text-center">
+                                    @if (item.Products != null)
+                                    {
+                                        <span class="badge rounded-pill bg-primary">@item.Products.Count</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">–</span>
+                                    }
+                                </td>
+
+                                <td class="text-end">
+                                    <!-- Visible par tous : voir les produits de la catégorie -->
+                                    <a asp-controller="Product" asp-action="Index" asp-route-categoryId="@item.CategoryId"
+                                       class="btn btn-sm btn-outline-primary">👁️ Voir les produits</a>
+
+                                    @* Gestion : Admin et Manager seulement *@
+                                    @if (canManage)
+                                    {
+                                        <a asp-action="Details" asp-route-id="@item.CategoryId"
+                                           class="btn btn-sm btn-outline-secondary">Détails</a>
+                                        <a asp-action="Edit" asp-route-id="@item.CategoryId"
+                                           class="btn btn-sm btn-outline-warning">✏️ Modifier</a>
+                                        <a asp-action="Delete" asp-route-id="@item.CategoryId"
+                                           class="btn btn-sm btn-outline-danger">🗑️ Supprimer</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

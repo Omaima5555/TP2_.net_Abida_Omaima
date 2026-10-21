@@ -5,6 +5,10 @@
         public int quantite { get; set; }
         private int _ProduitId;
         public Product _product = null;
+
+        public float UnitPrice { get { return _product.FinalPrice; } }
+        public float TotalPrice { get { return _product.FinalPrice * quantite; } }
+
         public Product Prod
         {
             get { return _product; }
@@ -14,10 +18,18 @@
         {
             get { return _product.Name; }
         }
+        /*
         public float UnitPrice
         {
             get { return _product.Price; }
         }
+        
+       public float TotalPrice
+       {
+           get { return _product.Price * quantite; }
+       }
+       */
+
         public int categoryId
         {
             get { return _product.CategoryId; }
@@ -26,10 +38,7 @@
         {
             get { return _product.Category; }
         }
-        public float TotalPrice
-        {
-            get { return _product.Price * quantite; }
-        }
+       
         public Item(Product p)
         {
             this.Prod = p;
@@ -38,5 +47,7 @@
         {
             return item.Prod.ProductId == this.Prod.ProductId;
         }
+
+        
     }
 }

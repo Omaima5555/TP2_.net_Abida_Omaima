@@ -7,8 +7,15 @@
     .cart-card { border: 0; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.08); margin-bottom: 1.2rem; transition: .2s; }
     .cart-card:hover { box-shadow: 0 6px 22px rgba(0,0,0,.12); }
     .cart-img { width: 160px; height: 160px; object-fit: contain; border-radius: 10px; background: #f8f9fa; padding: 6px; }
-    .qty-btn img { width: 38px; height: 38px; transition: transform .15s; }
-    .qty-btn:hover img { transform: scale(1.15); }
+
+    /* Boutons + / - / poubelle : icônes SVG intégrées (aucun fichier image nécessaire) */
+    .qty-btn { display: inline-flex; line-height: 1; text-decoration: none; transition: transform .15s; }
+    .qty-btn svg { width: 36px; height: 36px; }
+    .qty-btn:hover { transform: scale(1.15); }
+    .qty-btn.plus   { color: #198754; }   /* vert */
+    .qty-btn.minus  { color: #fd7e14; }   /* orange */
+    .qty-btn.remove { color: #dc3545; }   /* rouge */
+
     .qty-badge { font-size: 1.1rem; min-width: 2.4rem; }
     .line-total { font-size: 1.15rem; font-weight: 700; color: #198754; }
     .summary-card { border: 0; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.08); background: #f8f9fa; }
@@ -41,15 +48,37 @@
                                     <span class="badge bg-info text-dark mb-3">🏷️ @item.Prod.Category.CategoryName</span>
 
                                     <div class="d-flex align-items-center gap-2 mb-3">
-                                        <a href="#" class="MinProducts qty-btn" data-id="@item.Prod.ProductId" title="Diminuer">
-                                            <img src="~/images/moin.png" alt="Moins" />
+
+                                        <!-- Moins -->
+                                        <a href="#" class="MinProducts qty-btn minus" data-id="@item.Prod.ProductId" title="Diminuer">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                                            </svg>
                                         </a>
+
                                         <span class="badge bg-secondary qty-badge" id="quantite_@item.Prod.ProductId">@item.quantite</span>
-                                        <a href="#" class="PlusProducts qty-btn" data-id="@item.Prod.ProductId" title="Augmenter">
-                                            <img src="~/images/add.png" alt="Plus" />
+
+                                        <!-- Plus -->
+                                        <a href="#" class="PlusProducts qty-btn plus" data-id="@item.Prod.ProductId" title="Augmenter">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="12" y1="8" x2="12" y2="16"></line>
+                                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                                            </svg>
                                         </a>
-                                        <a href="#" class="RemoveLink qty-btn ms-3" data-id="@item.Prod.ProductId" title="Supprimer">
-                                            <img src="~/images/delet.png" alt="Supprimer" />
+
+                                        <!-- Supprimer (poubelle) -->
+                                        <a href="#" class="RemoveLink qty-btn remove ms-3" data-id="@item.Prod.ProductId" title="Supprimer">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
                                         </a>
                                     </div>
 
@@ -89,7 +118,7 @@
     else
     {
         <div class="text-center mt-5 empty-cart">
-            <img src="~/images/panier_vide.png" alt="Panier vide" style="width:200px;height:auto;" />
+            <img src="~/images/panier_vide.jpg" alt="Panier vide" style="width:200px;height:auto;" />
             <h3 class="mt-3 text-muted">Votre panier est vide !</h3>
             <p class="text-muted">Partez à la découverte de nos produits et faites-vous plaisir 😊</p>
             <a href="~/Product/Index" class="btn btn-primary btn-lg mt-3">🛍️ Voir les produits</a>
@@ -99,3 +128,4 @@
 </div>
 
 <script src="~/js/Monscript.js" type="text/javascript"></script>
+

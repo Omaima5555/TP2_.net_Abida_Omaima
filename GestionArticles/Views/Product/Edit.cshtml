@@ -1,71 +1,95 @@
 @model GestionArticles.ViewModels.EditViewModel
+
 @{
-    ViewData["Title"] = "Edit";
-    // Get the full path of the existing product photo for display
+    ViewData["Title"] = "Modifier le produit";
+    // Chemin de la photo actuelle du produit
     var photoPath = "~/images/" + (Model.ExistingImagePath ?? "noimage.jpg");
 }
-<h1>Edit</h1>
-<h4>Product</h4>
-<hr />
-<form asp-controller="Product" asp-action="edit" enctype="multipart/form-data" method="post" class="mt-3">
-    <div asp-validation-summary="All" class="text-danger"> </div>
-    @*Use hidden input elements to store productid and ExistingImagePath which we need when we submit the form and update data in the DB*@
-    <input hidden asp-for="ProductId" />
-    <input hidden asp-for="ExistingImagePath" />
-    @*Bind to the properties of the ProductEditViewModel.*@
-    <div class="form-group row">
-        <label asp-for="Name" class="control-label"></label>
-        <input asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-    </div>
-    <div class="form-group row">
-        <label asp-for="Price" class="control-label"></label>
-        <input asp-for="Price" class="form-control" />
-        <span asp-validation-for="Price" class="text-danger"></span>
-    </div>
-    <div class="form-group row">
-        <label asp-for="QteStock" class="control-label"></label>
-        <input asp-for="QteStock" class="form-control" />
-        <span asp-validation-for="QteStock" class="text-danger"></span>
-    </div>
-    <div class="form-group row">
-        <label asp-for="CategoryId" class="control-label"></label>
-        <select asp-for="CategoryId" class="form-control" asp-items="ViewBag.CategoryId"></select>
-        <span asp-validation-for="CategoryId" class="text-danger"></span>
-    </div>
-    <div class="form-group row">
-        <label asp-for="ImagePath" class="col-sm-2 col-form-label"></label>
-        <div class="col-sm-10">
-            <div class="custom-file">
-                <input asp-for="ImagePath" class="custom-file-input form-control" id="imageInput">
-                <label class="custom-file-label" for="imageInput">Cliquer ici pour changer la photo</label>
-            </div>
+
+<div class="container mt-4" style="max-width:750px">
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-warning">
+            <h4 class="mb-0">✏️ Modifier le produit</h4>
+        </div>
+
+        <div class="card-body">
+            <form asp-controller="Product" asp-action="Edit" enctype="multipart/form-data" method="post">
+                <div asp-validation-summary="All" class="text-danger"></div>
+
+                @* Champs cachés nécessaires à la mise à jour en base *@
+                <input type="hidden" asp-for="ProductId" />
+                <input type="hidden" asp-for="ExistingImagePath" />
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label fw-semibold">Nom du produit</label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Price" class="form-label fw-semibold">Prix (TND)</label>
+                        <input asp-for="Price" class="form-control" />
+                        <span asp-validation-for="Price" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="QteStock" class="form-label fw-semibold">Quantité en stock</label>
+                        <input asp-for="QteStock" class="form-control" />
+                        <span asp-validation-for="QteStock" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="CategoryId" class="form-label fw-semibold">Catégorie</label>
+                        <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId"></select>
+                        <span asp-validation-for="CategoryId" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="PromoPercent" class="form-label fw-semibold">Promotion (%)</label>
+                        <div class="input-group">
+                            <input asp-for="PromoPercent" class="form-control" min="0" max="90" />
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <small class="text-muted">0 = pas de promotion</small>
+                        <span asp-validation-for="PromoPercent" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ImagePath" class="form-label fw-semibold">Changer la photo</label>
+                    <input asp-for="ImagePath" class="form-control" accept="image/*" />
+                    <small class="text-muted">Laissez vide pour garder la photo actuelle.</small>
+                </div>
+
+                @* Photo actuelle / aperçu de la nouvelle photo *@
+                <div class="text-center mb-3">
+                    <img id="imageEmp" src="@photoPath" asp-append-version="true"
+                         class="img-thumbnail" style="height:140px" alt="Photo du produit" />
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Index" asp-controller="Product" class="btn btn-outline-secondary">← Annuler</a>
+                    <button type="submit" class="btn btn-warning">💾 Enregistrer les modifications</button>
+                </div>
+            </form>
         </div>
     </div>
-    @* Display the existing Product photo *@
-    <div class="form-group row col-sm-4 offset-4">
-        <img id="imageEmp" src="@photoPath" asp-append-version="true" height="100" width="100" />
-    </div>
-    <div class="form-group row">
-        <div class="col-sm-10">
-            <button type="submit" class="btn btn-primary">Update</button>
-            <a asp-action="index" asp-controller="Product" class="btn btn-primary">Cancel</a>
-        </div>
-    </div>
-    @section Scripts {
-        <script>
-                $(document).ready(function () {
-                $('.custom-file-input').on("change", function () {
-                var fileName = $(this).val().split("\\").pop();
-                $(this).next('.custom-file-label').html(fileName);
-                // Mise à jour de l'image de prévisualisation
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                $('#imageEmp').attr('src', e.target.result); // Utilisation de la nouvelle image sélectionnée
-                };
-                reader.readAsDataURL(this.files[0]); // Lecture du fichier sélectionné
-                });
-                });
-        </script>
-    }
-</form>
+
+</div>
+
+@section Scripts {
+    <script>
+        // Aperçu de la nouvelle photo choisie
+        document.getElementById('ImagePath').addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('imageEmp').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    </script>
+}

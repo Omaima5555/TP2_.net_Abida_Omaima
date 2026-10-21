@@ -4,6 +4,7 @@ using GestionArticles.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Security.Claims;
 
 namespace GestionArticles.Controllers
 {
@@ -15,15 +16,20 @@ namespace GestionArticles.Controllers
         readonly IProductRepository ProductRepository;
         readonly ICategoryRepository CategRepository;
         private readonly IWebHostEnvironment hostingEnvironment;
+        private readonly AppDbContext db;
+
+
 
         public ProductController(
             IProductRepository ProdRepository,
             ICategoryRepository categRepository,
-            IWebHostEnvironment hostingEnvironment)
+            IWebHostEnvironment hostingEnvironment,
+            AppDbContext db)
         {
             ProductRepository = ProdRepository;
             CategRepository = categRepository;
             this.hostingEnvironment = hostingEnvironment;
+            this.db = db;
         }
 
         // GET: ProductController
@@ -63,13 +69,34 @@ namespace GestionArticles.Controllers
             ViewData["Categories"] = categories;
 
             var product = ProductRepository.GetById(id);
+            if (product == null) return NotFound();
 
-            if (product == null)
-                return NotFound();
+            // --- Avis du produit + note moyenne ---
+            var reviews = db.Reviews
+                .Where(r => r.ProductId == id)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToList();
+
+            ViewBag.Reviews = reviews;
+            ViewBag.ReviewCount = reviews.Count;
+            ViewBag.AvgRating = reviews.Count > 0
+                ? Math.Round(reviews.Average(r => r.Rating), 1)
+                : 0.0;
+
+            // --- Le client peut-il noter ce produit ? ---
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            bool already = false, canReview = false;
+            if (userId != null)
+            {
+                already = db.Reviews.Any(r => r.ProductId == id && r.UserId == userId);
+                canReview = !already &&
+                            db.OrderItems.Any(i => i.ProductId == id && i.Order.UserId == userId);
+            }
+            ViewBag.CanReview = canReview;
+            ViewBag.AlreadyReviewed = already;
 
             return View(product);
         }
-
 
         [Authorize(Roles = "Admin,Manager")]
 
@@ -132,9 +159,11 @@ namespace GestionArticles.Controllers
                     Price = model.Price,
                     QteStock = model.QteStock,
                     CategoryId = model.CategoryId,
+                   
 
                     // Enregistrer le nom de l'image dans la base de données
-                    Image = uniqueFileName
+                    Image = uniqueFileName,
+                    PromoPercent = model.PromoPercent
                 };
 
                 // Ajouter le produit dans la base de données
@@ -176,7 +205,8 @@ namespace GestionArticles.Controllers
                 Price = product.Price,
                 QteStock = product.QteStock,
                 CategoryId = product.CategoryId,
-                ExistingImagePath = product.Image
+                ExistingImagePath = product.Image,
+                PromoPercent = product.PromoPercent
             };
             return View(productEditViewModel);
         }
@@ -200,6 +230,7 @@ namespace GestionArticles.Controllers
                 product.Price = model.Price;
                 product.QteStock = model.QteStock;
                 product.CategoryId = model.CategoryId;
+                product.PromoPercent = model.PromoPercent;
                 // If the user wants to change the photo, a new photo will be
                 // uploaded and the Photo property on the model object receives
                 // the uploaded photo. If the Photo property is null, user did

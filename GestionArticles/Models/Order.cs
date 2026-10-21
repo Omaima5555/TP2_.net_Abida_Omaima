@@ -17,5 +17,7 @@ namespace GestionArticles.Models
 
         // Liste des articles de la commande
         public List<OrderItem> Items { get; set; }
+
+        public string? StripeSessionId { get; set; }
     }
 }

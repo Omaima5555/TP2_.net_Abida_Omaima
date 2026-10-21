@@ -2,8 +2,17 @@ using GestionArticles.Models;
 using GestionArticles.Models.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Stripe;
+using System.Threading.RateLimiting;
+using GestionArticles.Services;
+using GestionArticles.Services;                      // ← nouveau
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
+
+
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -16,6 +25,20 @@ builder.Services.AddDbContextPool<AppDbContext>(options =>
 
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+
+builder.Services.AddHttpClient<ClaudeClient>(c => c.Timeout = TimeSpan.FromSeconds(20));
+builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IAdminChatService, AdminChatService>();
+
+// Limite : 15 messages par minute et par utilisateur/IP (protège aussi votre crédit IA)
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.AddPolicy("chat", ctx => RateLimitPartition.GetFixedWindowLimiter(
+        ctx.User.Identity?.Name ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "anon",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 15, Window = TimeSpan.FromMinutes(1) }));
+});
+
 
 /*
 
@@ -59,6 +82,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 

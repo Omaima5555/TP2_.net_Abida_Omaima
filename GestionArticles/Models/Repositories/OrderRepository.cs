@@ -23,5 +23,11 @@ namespace GestionArticles.Models.Repositories
                 .Include(o => o.Items)
                 .FirstOrDefault(o => o.Id == id);
         }
+
+
+        public Order? GetBySessionId(string sessionId)
+        {
+            return context.Orders.FirstOrDefault(o => o.StripeSessionId == sessionId);
+        }
     }
 }

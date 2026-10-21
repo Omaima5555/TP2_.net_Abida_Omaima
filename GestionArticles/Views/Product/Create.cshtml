@@ -1,65 +1,86 @@
 @model GestionArticles.ViewModels.CreateViewModel
+
 @{
-ViewData["Title"] = "Create";
+    ViewData["Title"] = "Nouveau produit";
 }
-<h1>Create</h1>
-<h4>Product</h4>
-<hr />
-<div class="row">
-<div class="col-md-4">
-@*To support file upload set the form element enctype="multipart/form-data" *@
-<form enctype="multipart/form-data" asp-action="Create">
-<div asp-validation-summary="All" class="text-danger"></div>
-<div class="form-group">
-<label asp-for="Name" class="control-label"></label>
-<input asp-for="Name" class="form-control" />
-<span asp-validation-for="Name" class="text-danger"></span>
-</div>
-<div class="form-group">
-<label asp-for="Price" class="control-label"></label>
-<input asp-for="Price" class="form-control" />
-<span asp-validation-for="Price" class="text-danger"></span>
-</div>
-<div class="form-group">
-<label asp-for="QteStock" class="control-label"></label>
-<input asp-for="QteStock" class="form-control" />
-<span asp-validation-for="QteStock" class="text-danger"></span>
-</div>
-<div class="form-group">
-<label asp-for="CategoryId" class="control-label"></label>
-<select asp-for="CategoryId" class ="form-control" asp-items="ViewBag.CategoryId"></select>
-</div>
-            @* asp-for tag helper is set to "ImagePath" property. "ImagePath" property type is IFormFile so at runtime asp.net core generates
-file upload control (input type=file)*@
-            <div class="form-group row">
-                <label asp-for="ImagePath" class="col-sm-2 col-form-label"></label>
-                <div class="col-sm-10">
-                    <div class="custom-file">
-                        <input asp-for="ImagePath" class="form-control custom-file-input">
-                        <label class="custom-file-label">Choose File...</label>
+
+<div class="container mt-4" style="max-width:750px">
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0">➕ Nouveau produit</h4>
+        </div>
+
+        <div class="card-body">
+            @* enctype obligatoire pour l'envoi de fichier *@
+            <form enctype="multipart/form-data" asp-action="Create">
+                <div asp-validation-summary="All" class="text-danger"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label fw-semibold">Nom du produit</label>
+                    <input asp-for="Name" class="form-control" placeholder="Ex : Chocolat Maestro" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Price" class="form-label fw-semibold">Prix (TND)</label>
+                        <input asp-for="Price" class="form-control" />
+                        <span asp-validation-for="Price" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="QteStock" class="form-label fw-semibold">Quantité en stock</label>
+                        <input asp-for="QteStock" class="form-control" />
+                        <span asp-validation-for="QteStock" class="text-danger"></span>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="CategoryId" class="form-label fw-semibold">Catégorie</label>
+                        <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="PromoPercent" class="form-label fw-semibold">Promotion (%)</label>
+                        <div class="input-group">
+                            <input asp-for="PromoPercent" class="form-control" min="0" max="90" />
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <small class="text-muted">0 = pas de promotion</small>
+                        <span asp-validation-for="PromoPercent" class="text-danger"></span>
+                    </div>
+                </div>
+
+                @* ImagePath est de type IFormFile : génère un <input type="file"> *@
+                <div class="mb-3">
+                    <label asp-for="ImagePath" class="form-label fw-semibold">Image du produit</label>
+                    <input asp-for="ImagePath" class="form-control" accept="image/*" />
+                    <img id="preview" class="img-thumbnail mt-2 d-none" style="height:140px" alt="Aperçu" />
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary">← Retour à la liste</a>
+                    <button type="submit" class="btn btn-success">✔ Créer le produit</button>
+                </div>
+            </form>
+        </div>
     </div>
+
 </div>
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-@*@section Scripts {
-@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}*@
-@*This script is required to display the selected file in the file upload element*@
+
 @section Scripts {
     <script>
-        $(document).ready(function () {
-        $('.custom-file-input').on("change", function () {
-        var fileName = $(this).val().split("\\").pop();
-        $(this).next('.custom-file-label').html(fileName);
-        });
+        // Aperçu de l'image choisie
+        document.getElementById('ImagePath').addEventListener('change', function () {
+            const img = document.getElementById('preview');
+            const file = this.files[0];
+            if (!file) { img.classList.add('d-none'); return; }
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                img.src = e.target.result;
+                img.classList.remove('d-none');
+            };
+            reader.readAsDataURL(file);
         });
     </script>
 }
